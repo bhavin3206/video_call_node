@@ -22,6 +22,139 @@
   <video id="remoteVideo" autoplay></video>
   <button id="startBtn">Start Call</button>
   <script src="/socket.io/socket.io.js"></script>
-  <script src="main.js"></script>
-</body>
+  <script>
+    const socket = io({ transports: ['polling', 'websocket'] });
+    let peer;
+    let localStream;
+    let currentCall;
+  
+    function join() {
+      const username = document.getElementById('username').value.trim();
+      if (!username) {
+        alert('Please enter a username');
+        return;
+      }
+      console.log('Joining as:', username);
+      document.getElementById('username-input').style.display = 'none';
+      socket.emit('join', username);
+  
+      peer = new Peer();
+      peer.on('open', (id) => {
+        console.log('Peer ID:', id);
+      });
+  
+      peer.on('call', (call) => {
+        console.log('Received call');
+        currentCall = call;
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+          .then((stream) => {
+            localStream = stream;
+            document.getElementById('local-video').srcObject = stream;
+            call.answer(stream);
+            call.on('stream', (remoteStream) => {
+              document.getElementById('remote-video').srcObject = remoteStream;
+              document.getElementById('call-status').textContent = 'In call...';
+            });
+            call.on('close', () => {
+              endCall();
+            });
+          })
+          .catch((err) => {
+            alert('Camera/mic access denied: ' + err.message);
+          });
+      });
+    }
+  
+    socket.on('active-users', (users) => {
+      console.log('Received active users:', users);
+      updateUserList(users);
+    });
+  
+    socket.on('user-joined', (user) => {
+      console.log('User joined:', user);
+      const userList = document.getElementById('user-list');
+      const li = document.createElement('li');
+      li.dataset.id = user.id;
+      li.textContent = user.username;
+      li.onclick = () => startCall(user.id, user.username);
+      userList.appendChild(li);
+    });
+  
+    socket.on('user-left', (user) => {
+      console.log('User left:', user);
+      const li = document.querySelector(`li[data-id="${user.id}"]`);
+      if (li) li.remove();
+    });
+  
+    socket.on('incoming-call', ({ callerId, username }) => {
+      console.log('Incoming call from:', username);
+      if (confirm(`${username} is calling you. Accept?`)) {
+        socket.emit('accept-call', { callerId, calleeId: socket.id });
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+          .then((stream) => {
+            localStream = stream;
+            document.getElementById('local-video').srcObject = stream;
+          })
+          .catch((err) => {
+            alert('Camera/mic access denied: ' + err.message);
+          });
+      }
+    });
+  
+    socket.on('call-accepted', ({ calleeId }) => {
+      console.log('Call accepted by:', calleeId);
+      const call = peer.call(calleeId, localStream);
+      currentCall = call;
+      call.on('stream', (remoteStream) => {
+        document.getElementById('remote-video').srcObject = remoteStream;
+        document.getElementById('call-status').textContent = 'In call...';
+      });
+      call.on('close', () => {
+        endCall();
+      });
+    });
+  
+    function startCall(calleeId, username) {
+      console.log('Starting call to:', username);
+      navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        .then((stream) => {
+          localStream = stream;
+          document.getElementById('local-video').srcObject = stream;
+          socket.emit('call-user', {
+            callerId: socket.id,
+            calleeId,
+            username: document.getElementById('username').value
+          });
+        })
+        .catch((err) => {
+          alert('Failed to access camera/mic: ' + err.message);
+        });
+    }
+  
+    function updateUserList(users) {
+      console.log('Updating user list:', users);
+      const userList = document.getElementById('user-list');
+      userList.innerHTML = '';
+      users.forEach(([id, username]) => {
+        const li = document.createElement('li');
+        li.dataset.id = id;
+        li.textContent = username;
+        li.onclick = () => startCall(id, username);
+        userList.appendChild(li);
+      });
+    }
+  
+    function endCall() {
+      console.log('Ending call');
+      if (currentCall) currentCall.close();
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+      }
+      document.getElementById('local-video').srcObject = null;
+      document.getElementById('remote-video').srcObject = null;
+      document.getElementById('call-status').textContent = '';
+    }
+  </script>
+  </body>
+
 </html>
