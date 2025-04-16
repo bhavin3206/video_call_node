@@ -89,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
   logoutBtn.addEventListener('click', () => {
     // Clear localStorage
     localStorage.removeItem('videoChatUsername');
+    userControls.classList.remove('!d-flex');
     
 
     // Clean up resources
