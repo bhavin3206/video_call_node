@@ -81,7 +81,7 @@
       width: 100%;
       border-radius: 8px;
       background-color: #222;
-      object-fit: cover;
+      height: 100%;
     }
     
     .hidden {
@@ -212,7 +212,7 @@
         </div>
 
         <!-- Video Streams -->
-        <div id="videoArea" class="d-flex flex-row flex-wrap">
+        <div id="videoArea" class="d-flex flex-row flex-wrap flex-md-nowrap">
           <!-- Remote Video (Placed first to be on top in mobile view) -->
           <div class="video-container hidden" id="remoteVideoContainer">
             <video id="remoteVideo" autoplay playsinline></video>
