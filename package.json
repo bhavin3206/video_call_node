@@ -1,12 +1,18 @@
 {
-  "name": "video-call-app",
+  "name": "video-chat-app",
   "version": "1.0.0",
+  "description": "A real-time video chat application using Socket.IO and PeerJS",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "socket.io": "^4.7.2"
+    "socket.io": "^4.7.2",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
   }
 }
