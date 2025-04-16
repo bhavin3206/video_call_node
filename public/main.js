@@ -417,6 +417,10 @@ document.addEventListener('DOMContentLoaded', () => {
         socket.emit('accept-call', { callerSocketId: caller.socketId, roomId });
         startCall(caller.peerId, false);
         incomingCallModal.hide();
+        const onCallElems = document.getElementsByClassName('oncall');
+        for (let elem of onCallElems) {
+          elem.classList.remove('hidden');
+        }    
       };
       
       // Handle call decline
@@ -543,7 +547,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentRoomId) {
       socket.emit('end-call', { roomId: currentRoomId });
     }
-    
+    const onCallElems = document.getElementsByClassName('oncall');
+    for (let elem of onCallElems) {
+      elem.classList.remove('hidden');
+    }
+
     resetCallState();
   }
 
