@@ -113,13 +113,14 @@ document.addEventListener('DOMContentLoaded', () => {
     appScreen.classList.add('hidden');
     loginScreen.classList.remove('hidden');
 
+    window.location.reload()
   });
 
   // Initialize app with username
   async function initializeApp(username) {
     try {
-      userControls.classList.add('d-flex');
       document.getElementsByTagName('h1').classList.remove('w-100');
+      userControls.classList.add('d-flex');
       // Set username display
       usernameDisplay.textContent = username;
       
