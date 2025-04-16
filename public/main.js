@@ -568,7 +568,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentCall) {
       currentCall.close();
       currentCall = null;
-      updateUsersList();
+      socket.on('active-users', (activeUsers) => {
+        updateUsersList(activeUsers);
+      });
     }
     
     if (remoteVideo.srcObject) {
