@@ -22,23 +22,76 @@
     }
     #videoArea {
       display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-      justify-content: center;
+      flex-direction: column;
+      max-height: calc(100vh - 240px);
+      overflow: hidden;
     }
+    
+    /* Mobile layout for videos */
+    @media (max-width: 767px) {
+      #videoArea {
+        flex-direction: column;
+        max-height: calc(100vh - 200px);
+      }
+      
+      .video-container {
+        width: 100%;
+        height: 50%; /* Take half the available height */
+        max-height: 50vh;
+        margin-bottom: 10px;
+      }
+      
+      video {
+        height: 100%;
+        object-fit: cover;
+      }
+      
+      /* Make sure both videos are visible */
+      #remoteVideoContainer.hidden {
+        display: none;
+      }
+      
+      #remoteVideoContainer:not(.hidden) + .video-container {
+        height: 40%;
+      }
+      
+      #remoteVideoContainer:not(.hidden) {
+        height: 60%;
+      }
+    }
+    
+    /* Desktop layout for videos */
+    @media (min-width: 768px) {
+      #videoArea {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 20px;
+      }
+      
+      .video-container {
+        width: 100%;
+        max-width: 500px;
+      }
+    }
+    
     .video-container {
-      width: 100%;
-      max-width: 500px;
       position: relative;
+      border-radius: 8px;
+      overflow: hidden;
     }
+    
     video {
       width: 100%;
       border-radius: 8px;
       background-color: #222;
+      object-fit: cover;
     }
+    
     .hidden {
       display: none;
     }
+    
     .video-label {
       position: absolute;
       bottom: 10px;
@@ -47,19 +100,78 @@
       color: white;
       padding: 5px 10px;
       border-radius: 4px;
+      z-index: 5;
     }
+    
     #callControls {
-      text-align: center;
-      margin-top: 20px;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 15px;
+      background-color: rgba(248, 249, 250, 0.9);
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      z-index: 100;
+      border-top: 1px solid #ddd;
+    }
+    
+    .control-btn {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+    
+    .camera-list-item {
+      cursor: pointer;
+    }
+    
+    .camera-list-item:hover {
+      background-color: #f8f9fa;
+    }
+    
+    .camera-list-item.active {
+      font-weight: bold;
+    }
+    
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    
+    .user-welcome {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    #usernameDisplay {
+      font-weight: bold;
     }
   </style>
+
 </head>
 <body>
-  <!-- Rest of the HTML remains the same -->
   <div class="container mt-4">
+    <!-- Header section -->
     <div class="row">
       <div class="col-12 text-center mb-4">
-        <h1>Video Chat App</h1>
+        <div class="header-container">
+          <h1 class="mb-0">Video Chat App</h1>
+          <div id="userControls" class="user-welcome hidden">
+            <span>Welcome, <span id="usernameDisplay">User</span></span>
+            <button id="logoutBtn" class="btn btn-outline-danger btn-sm ms-2">
+              <i class="bi bi-box-arrow-right"></i> Exit
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -81,10 +193,11 @@
       </div>
     </div>
 
+
     <!-- Main App Screen (hidden initially) -->
     <div id="appScreen" class="row hidden">
       <!-- Users List -->
-      <div class="col-md-3">
+      <div class="col-md-3 mb-3">
         <div class="card">
           <div class="card-header">
             <h5 class="mb-0">Online Users</h5>
@@ -106,19 +219,33 @@
 
         <!-- Video Streams -->
         <div id="videoArea">
-          <div class="video-container">
-            <video id="localVideo" autoplay muted playsinline></video>
-            <div class="video-label">You</div>
-          </div>
+          <!-- Remote Video (Placed first to be on top in mobile view) -->
           <div class="video-container hidden" id="remoteVideoContainer">
             <video id="remoteVideo" autoplay playsinline></video>
             <div class="video-label" id="remoteVideoLabel">Remote User</div>
           </div>
+          
+          <!-- Local Video -->
+          <div class="video-container">
+            <video id="localVideo" autoplay muted playsinline></video>
+            <div class="video-label">You</div>
+          </div>
         </div>
 
-        <!-- Call Controls (hidden initially) -->
-        <div id="callControls" class="hidden">
-          <button id="endCallBtn" class="btn btn-danger">End Call</button>
+        <!-- Call Controls (always visible, but not functional until in a call) -->
+        <div id="callControls" class="mb-5 pb-2">
+          <button id="toggleMicBtn" class="btn btn-primary control-btn">
+            <i class="bi bi-mic-fill"></i>
+          </button>
+          <button id="toggleCameraBtn" class="btn btn-primary control-btn">
+            <i class="bi bi-camera-video-fill"></i>
+          </button>
+          <button id="cameraSelectorBtn" class="btn btn-secondary control-btn">
+            <i class="bi bi-camera"></i>
+          </button>
+          <button id="endCallBtn" class="btn btn-danger control-btn">
+            <i class="bi bi-telephone-x-fill"></i>
+          </button>
         </div>
       </div>
     </div>
@@ -136,6 +263,26 @@
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" id="declineCallBtn">Decline</button>
             <button type="button" class="btn btn-primary" id="acceptCallBtn">Accept</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Camera Selector Modal -->
+    <div class="modal fade" id="cameraSelectorModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Select Camera</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <ul id="camerasList" class="list-group">
+              <!-- Camera options will be added here -->
+            </ul>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
           </div>
         </div>
       </div>

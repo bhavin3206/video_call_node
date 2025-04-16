@@ -13,12 +13,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const remoteVideoLabel = document.getElementById('remoteVideoLabel');
   const callControls = document.getElementById('callControls');
   const endCallBtn = document.getElementById('endCallBtn');
+  const toggleMicBtn = document.getElementById('toggleMicBtn');
+  const toggleCameraBtn = document.getElementById('toggleCameraBtn');
+  const cameraSelectorBtn = document.getElementById('cameraSelectorBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const usernameDisplay = document.getElementById('usernameDisplay');
   
   // Call modals
   const incomingCallModal = new bootstrap.Modal(document.getElementById('incomingCallModal'));
   const callerNameSpan = document.getElementById('callerName');
   const acceptCallBtn = document.getElementById('acceptCallBtn');
   const declineCallBtn = document.getElementById('declineCallBtn');
+  
+  // Camera selection modal
+  const cameraSelectorModal = new bootstrap.Modal(document.getElementById('cameraSelectorModal'));
+  const camerasList = document.getElementById('camerasList');
   
   // Notification modal
   const notificationModal = new bootstrap.Modal(document.getElementById('notificationModal'));
@@ -39,19 +48,65 @@ document.addEventListener('DOMContentLoaded', () => {
   let isRemoteCameraFlipped = false; // Default to normal view for remote camera
   let availableCameras = []; // Store available camera devices
   let currentCameraIndex = 0; // Track which camera is in use
+  let isMicEnabled = true;
+  let isCameraEnabled = true;
+
+  // Check if user is already logged in
+  checkExistingSession();
 
   // Initialize the application
   joinForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const username = usernameInput.value.trim();
     if (username) {
+      // Save username to localStorage
+      localStorage.setItem('videoChatUsername', username);
       initializeApp(username);
     }
+  });
+
+  // Check for existing session
+  function checkExistingSession() {
+    const savedUsername = localStorage.getItem('videoChatUsername');
+    if (savedUsername) {
+      usernameInput.value = savedUsername;
+      initializeApp(savedUsername);
+    }
+  }
+
+  // Handle logout
+  logoutBtn.addEventListener('click', () => {
+    // Clear localStorage
+    localStorage.removeItem('videoChatUsername');
+    
+    // Clean up resources
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+    }
+    
+    if (currentCall) {
+      currentCall.close();
+    }
+    
+    if (socket) {
+      socket.disconnect();
+    }
+    
+    if (peer) {
+      peer.destroy();
+    }
+    
+    // Show login screen again
+    appScreen.classList.add('hidden');
+    loginScreen.classList.remove('hidden');
   });
 
   // Initialize app with username
   async function initializeApp(username) {
     try {
+      // Set username display
+      usernameDisplay.textContent = username;
+      
       // Enumerate available cameras before requesting access
       await enumerateCameras();
 
@@ -66,9 +121,6 @@ document.addEventListener('DOMContentLoaded', () => {
       // Apply initial camera flip setting
       updateCameraFlip();
 
-      // Add camera control buttons
-      createCameraControlButtons();
-
       // Connect to Socket.IO server
       socket = io();
       setupSocketListeners();
@@ -79,6 +131,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Save username
       myUsername = username;
+
+      // Set initial mic and camera status
+      updateMicButtonState();
+      updateCameraButtonState();
 
       // Hide login screen, show app screen
       loginScreen.classList.add('hidden');
@@ -96,28 +152,96 @@ document.addEventListener('DOMContentLoaded', () => {
       const devices = await navigator.mediaDevices.enumerateDevices();
       availableCameras = devices.filter(device => device.kind === 'videoinput');
       console.log('Available cameras:', availableCameras);
+      
+      // If we have cameras available, populate the camera selector
+      if (availableCameras.length > 0) {
+        populateCameraSelector();
+      } else {
+        cameraSelectorBtn.classList.add('hidden');
+      }
     } catch (error) {
       console.error('Error enumerating devices:', error);
       availableCameras = [];
+      cameraSelectorBtn.classList.add('hidden');
+    }
+  }
+  
+  // Populate camera selector modal with available cameras
+  function populateCameraSelector() {
+    camerasList.innerHTML = '';
+    
+    availableCameras.forEach((camera, index) => {
+      const li = document.createElement('li');
+      li.className = 'list-group-item camera-list-item';
+      
+      // Try to identify camera type by label
+      let cameraLabel = camera.label || `Camera ${index + 1}`;
+      
+      // Add indicators for front/back cameras
+      if (cameraLabel.toLowerCase().includes('front')) {
+        cameraLabel += ' (Front)';
+      } else if (cameraLabel.toLowerCase().includes('back') || cameraLabel.toLowerCase().includes('rear')) {
+        cameraLabel += ' (Back)';
+      }
+      
+      // Add indicators for wide angle, ultrawide, etc.
+      if (cameraLabel.toLowerCase().includes('wide')) {
+        if (cameraLabel.toLowerCase().includes('ultra')) {
+          cameraLabel += ' (Ultra Wide)';
+        } else {
+          cameraLabel += ' (Wide)';
+        }
+      }
+      
+      // Add indicator for telephoto
+      if (cameraLabel.toLowerCase().includes('tele')) {
+        cameraLabel += ' (Telephoto)';
+      }
+      
+      li.textContent = cameraLabel;
+      
+      // Highlight the currently selected camera
+      if (index === currentCameraIndex) {
+        li.classList.add('active');
+        li.style.backgroundColor = '#e9ecef';
+      }
+      
+      li.addEventListener('click', () => {
+        switchToCamera(index);
+        cameraSelectorModal.hide();
+      });
+      
+      camerasList.appendChild(li);
+    });
+    
+    if (availableCameras.length === 0) {
+      const li = document.createElement('li');
+      li.className = 'list-group-item';
+      li.textContent = 'No cameras detected';
+      camerasList.appendChild(li);
     }
   }
 
-  // Switch between available cameras
-  async function switchCamera() {
-    if (availableCameras.length <= 1) {
-      showNotification('Camera Switch', 'No additional cameras available');
+  // Switch to selected camera by index
+  async function switchToCamera(cameraIndex) {
+    if (cameraIndex < 0 || cameraIndex >= availableCameras.length) {
+      showNotification('Camera Error', 'Selected camera not available');
       return;
     }
-
+    
     try {
+      // Save current mic track state
+      const audioTrack = localStream ? localStream.getAudioTracks()[0] : null;
+      const micEnabled = audioTrack ? audioTrack.enabled : true;
+      
       // Stop all tracks on current stream
       if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
       }
 
-      // Move to next camera in the list
-      currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
-      const newCameraId = availableCameras[currentCameraIndex].deviceId;
+      // Update camera index
+      currentCameraIndex = cameraIndex;
+      const newCameraId = availableCameras[cameraIndex].deviceId;
       
       // Get stream from new camera
       localStream = await navigator.mediaDevices.getUserMedia({
@@ -125,79 +249,104 @@ document.addEventListener('DOMContentLoaded', () => {
         audio: true
       });
       
+      // Restore mic state
+      if (localStream && !micEnabled) {
+        const newAudioTrack = localStream.getAudioTracks()[0];
+        if (newAudioTrack) {
+          newAudioTrack.enabled = false;
+        }
+      }
+      
+      // Apply camera enable/disable state
+      if (!isCameraEnabled && localStream) {
+        const videoTrack = localStream.getVideoTracks()[0];
+        if (videoTrack) {
+          videoTrack.enabled = false;
+        }
+      }
+      
       // Update local video
       localVideo.srcObject = localStream;
       
-      // If in a call, replace the track for the remote peer
+      // If in a call, replace the tracks for the remote peer
       if (currentCall && currentCall.peerConnection) {
         const videoTrack = localStream.getVideoTracks()[0];
-        const senders = currentCall.peerConnection.getSenders();
-        const videoSender = senders.find(sender => sender.track && sender.track.kind === 'video');
+        const audioTrack = localStream.getAudioTracks()[0];
         
+        const senders = currentCall.peerConnection.getSenders();
+        
+        const videoSender = senders.find(sender => sender.track && sender.track.kind === 'video');
         if (videoSender && videoTrack) {
           videoSender.replaceTrack(videoTrack);
+        }
+        
+        const audioSender = senders.find(sender => sender.track && sender.track.kind === 'audio');
+        if (audioSender && audioTrack) {
+          audioSender.replaceTrack(audioTrack);
         }
       }
 
       // Update camera flip - typically back cameras shouldn't be mirrored
-      if (availableCameras.length > 1) {
-        // Assume front camera is first in list, back camera second
-        // This is a common convention but not guaranteed
-        isCameraFlipped = currentCameraIndex === 0;
-        updateCameraFlip();
-      }
+      const cameraLabel = availableCameras[cameraIndex].label.toLowerCase();
+      // Most front cameras have "front" in the label, otherwise we assume back camera
+      isCameraFlipped = cameraLabel.includes('front');
+      updateCameraFlip();
     } catch (error) {
       console.error('Error switching camera:', error);
       showNotification('Camera Switch Failed', error.message);
     }
   }
 
-  // Create camera control buttons
-  function createCameraControlButtons() {
-    const localVideoContainer = localVideo.parentElement;
-    localVideoContainer.style.position = 'relative';
-    
-    // Control panel div for local video
-    const localControlPanel = document.createElement('div');
-    localControlPanel.className = 'position-absolute top-0 right-0 p-2 d-flex gap-2';
-    localControlPanel.style.zIndex = '10';
-    
-    // Camera flip button
-    const flipBtn = document.createElement('button');
-    flipBtn.innerHTML = '<i class="bi bi-camera"></i> Flip View';
-    flipBtn.className = 'btn btn-sm btn-secondary';
-    flipBtn.addEventListener('click', () => {
-      isCameraFlipped = !isCameraFlipped;
-      updateCameraFlip();
-    });
-    
-    // Camera switch button (only if multiple cameras available)
-    const switchBtn = document.createElement('button');
-    switchBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Switch Camera';
-    switchBtn.className = 'btn btn-sm btn-primary';
-    switchBtn.addEventListener('click', switchCamera);
-    
-    // Add buttons to control panel
-    localControlPanel.appendChild(flipBtn);
-    localControlPanel.appendChild(switchBtn);
-    
-    // Add control panel to container
-    localVideoContainer.appendChild(localControlPanel);
-
-    // Remote video flip button
-    const remoteFlipBtn = document.createElement('button');
-    remoteFlipBtn.innerHTML = '<i class="bi bi-camera"></i> Flip Their View';
-    remoteFlipBtn.className = 'btn btn-sm btn-secondary position-absolute top-0 right-0 m-2';
-    remoteFlipBtn.style.zIndex = '10';
-    
-    remoteFlipBtn.addEventListener('click', () => {
-      isRemoteCameraFlipped = !isRemoteCameraFlipped;
-      updateRemoteCameraFlip();
-    });
-    
-    // Add button to the remote video container
-    remoteVideoContainer.style.position = 'relative';
-    remoteVideoContainer.appendChild(remoteFlipBtn);
+  // Toggle microphone on/off
+  function toggleMicrophone() {
+    if (localStream) {
+      const audioTracks = localStream.getAudioTracks();
+      if (audioTracks.length > 0) {
+        const enabled = !audioTracks[0].enabled;
+        audioTracks[0].enabled = enabled;
+        isMicEnabled = enabled;
+        updateMicButtonState();
+      }
+    }
+  }
+  
+  // Toggle camera on/off
+  function toggleCamera() {
+    if (localStream) {
+      const videoTracks = localStream.getVideoTracks();
+      if (videoTracks.length > 0) {
+        const enabled = !videoTracks[0].enabled;
+        videoTracks[0].enabled = enabled;
+        isCameraEnabled = enabled;
+        updateCameraButtonState();
+      }
+    }
+  }
+  
+  // Update microphone button state
+  function updateMicButtonState() {
+    if (isMicEnabled) {
+      toggleMicBtn.innerHTML = '<i class="bi bi-mic-fill"></i>';
+      toggleMicBtn.classList.remove('btn-danger');
+      toggleMicBtn.classList.add('btn-primary');
+    } else {
+      toggleMicBtn.innerHTML = '<i class="bi bi-mic-mute-fill"></i>';
+      toggleMicBtn.classList.remove('btn-primary');
+      toggleMicBtn.classList.add('btn-danger');
+    }
+  }
+  
+  // Update camera button state
+  function updateCameraButtonState() {
+    if (isCameraEnabled) {
+      toggleCameraBtn.innerHTML = '<i class="bi bi-camera-video-fill"></i>';
+      toggleCameraBtn.classList.remove('btn-danger');
+      toggleCameraBtn.classList.add('btn-primary');
+    } else {
+      toggleCameraBtn.innerHTML = '<i class="bi bi-camera-video-off-fill"></i>';
+      toggleCameraBtn.classList.remove('btn-primary');
+      toggleCameraBtn.classList.add('btn-danger');
+    }
   }
 
   // Update camera flip based on current setting
@@ -397,7 +546,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     remoteVideoContainer.classList.add('hidden');
-    callControls.classList.add('hidden');
     callStatus.textContent = 'Not in a call';
     
     remoteSocketId = null;
@@ -454,11 +602,20 @@ document.addEventListener('DOMContentLoaded', () => {
     notificationModal.show();
   }
 
-  // Handle end call button
+  // Event listeners for control buttons
   endCallBtn.addEventListener('click', endCurrentCall);
+  toggleMicBtn.addEventListener('click', toggleMicrophone);
+  toggleCameraBtn.addEventListener('click', toggleCamera);
+  cameraSelectorBtn.addEventListener('click', () => {
+    // Repopulate camera list in case devices have changed
+    populateCameraSelector();
+    cameraSelectorModal.show();
+  });
 
   // Clean up when window is closed
   window.addEventListener('beforeunload', () => {
+    // Don't clear localStorage here - we want to persist login between page refreshes
+    
     if (localStream) {
       localStream.getTracks().forEach(track => track.stop());
     }
