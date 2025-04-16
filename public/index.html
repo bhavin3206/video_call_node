@@ -105,12 +105,11 @@
       left: 0;
       right: 0;
       padding: 15px;
-      background-color: rgba(248, 249, 250, 0.9);
+      background-color: transparent;
       display: flex;
       justify-content: center;
       gap: 20px;
       z-index: 100;
-      border-top: 1px solid #ddd;
     }
     
     .control-btn {
@@ -187,7 +186,7 @@
     </div>
 
     <!-- Main App Screen (hidden initially) -->
-    <div id="appScreen" class="row hidden justify-content-center">
+    <div id="appScreen" class="row hidden justify-content-center h-100">
       <!-- Users List -->
       <div class="col-md-3 mb-3  oncall">
         <div class="card">
@@ -203,7 +202,7 @@
       </div>
 
       <!-- Video Area -->
-      <div class="col-md-9 h-100 w-100 d-flex justify-content-center align-items-center flex-col">
+      <div class="col-md-9 h-100 w-100 d-flex justify-content-center align-items-center flex-column">
         <!-- Call Status Area -->
         <div id="callStatus" class="alert alert-info text-center mb-3 oncall">
           Not in a call
@@ -225,7 +224,7 @@
         </div>
 
         <!-- Call Controls (always visible, but not functional until in a call) -->
-        <div id="callControls" class="mb-5 mb-sm-0 pb-2 hidden">
+        <div id="callControls" class="mb-5 mb-sm-0 pb-2 hidden ">
           <button id="toggleMicBtn" class="btn btn-primary control-btn">
             <i class="bi bi-mic-fill"></i>
           </button>
