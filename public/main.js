@@ -502,6 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Start a call with a remote peer
   function startCall(remotePeerId, isInitiator) {
     if (isInitiator) {
+      document.getElementsByClassName('oncall').style = 'display: none';
       currentCall = peer.call(remotePeerId, localStream);
     }
     
@@ -548,6 +549,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentCall) {
       currentCall.close();
       currentCall = null;
+      updateUsersList();
     }
     
     if (remoteVideo.srcObject) {

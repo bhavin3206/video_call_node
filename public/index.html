@@ -63,7 +63,7 @@
     @media (min-width: 768px) {
       #videoArea {
         flex-direction: row;
-        /* flex-wrap: wrap; */
+        flex-wrap: wrap;
         justify-content: center;
         gap: 20px;
       }
@@ -159,7 +159,7 @@
 <body>
   <div class="container mt-4">
     <!-- Header section -->
-    <div class="row">
+    <div class="row oncall">
       <div class="col-12 text-center mb-4">
         <div class="header-container">
           <h1 class="mb-0">Video Chat App</h1>
@@ -174,7 +174,7 @@
     </div>
 
     <!-- Login Screen -->
-    <div id="loginScreen" class="row justify-content-center">
+    <div id="loginScreen" class="row oncall justify-content-center">
       <div class="col-md-6">
         <div class="card">
           <div class="card-body">
@@ -194,7 +194,7 @@
     <!-- Main App Screen (hidden initially) -->
     <div id="appScreen" class="row hidden">
       <!-- Users List -->
-      <div class="col-md-3 mb-3">
+      <div class="col-md-3 mb-3  oncall">
         <div class="card">
           <div class="card-header">
             <h5 class="mb-0">Online Users</h5>
