@@ -113,7 +113,6 @@ document.addEventListener('DOMContentLoaded', () => {
     appScreen.classList.add('hidden');
     loginScreen.classList.remove('hidden');
 
-    window.location.reload()
   });
 
   // Initialize app with username
