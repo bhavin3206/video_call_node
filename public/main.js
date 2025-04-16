@@ -373,7 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isRemoteCameraFlipped) {
       remoteVideo.style.transform = 'scaleX(-1)'; // Mirror the video
     } else {
-      remoteVideo.style.transform = 'scaleX(1)'; // Normal video
+      remoteVideo.style.transform = 'scaleX(-1)'; // Normal video
     }
   }
 
