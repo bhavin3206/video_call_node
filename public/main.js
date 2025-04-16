@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
   logoutBtn.addEventListener('click', () => {
     // Clear localStorage
     localStorage.removeItem('videoChatUsername');
-    userControls.classList.remove('!d-flex');
+    userControls.classList.remove('d-flex');
     
 
     // Clean up resources
@@ -118,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize app with username
   async function initializeApp(username) {
     try {
-      userControls.classList.add('!d-flex');
+      userControls.classList.add('d-flex');
       // Set username display
       usernameDisplay.textContent = username;
       
