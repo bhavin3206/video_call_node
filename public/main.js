@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const callStatus = document.getElementById('callStatus');
   const localVideo = document.getElementById('localVideo');
   const remoteVideo = document.getElementById('remoteVideo');
+  const userControls = document.getElementById('userControls');
   const remoteVideoContainer = document.getElementById('remoteVideoContainer');
   const remoteVideoLabel = document.getElementById('remoteVideoLabel');
   const callControls = document.getElementById('callControls');
@@ -89,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Clear localStorage
     localStorage.removeItem('videoChatUsername');
     
+
     // Clean up resources
     if (localStream) {
       localStream.getTracks().forEach(track => track.stop());
@@ -114,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize app with username
   async function initializeApp(username) {
     try {
+      userControls.classList.add('!d-flex');
       // Set username display
       usernameDisplay.textContent = username;
       
