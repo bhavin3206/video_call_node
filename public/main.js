@@ -502,7 +502,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Start a call with a remote peer
   function startCall(remotePeerId, isInitiator) {
     if (isInitiator) {
-      document.getElementsByClassName('oncall').style = 'display: none';
+      const onCallElems = document.getElementsByClassName('oncall');
+      for (let elem of onCallElems) {
+        elem.classList.add('hidden');
+      }
       currentCall = peer.call(remotePeerId, localStream);
     }
     
