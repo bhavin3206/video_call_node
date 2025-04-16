@@ -1,4 +1,3 @@
-<!-- public/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -156,7 +155,6 @@
       font-weight: bold;
     }
   </style>
-
 </head>
 <body>
   <div class="container mt-4">
@@ -192,7 +190,6 @@
         </div>
       </div>
     </div>
-
 
     <!-- Main App Screen (hidden initially) -->
     <div id="appScreen" class="row hidden">
@@ -281,9 +278,6 @@
               <!-- Camera options will be added here -->
             </ul>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          </div>
         </div>
       </div>
     </div>
@@ -297,20 +291,20 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <p id="notificationMessage"></p>
+            <p id="notificationMessage">Message</p>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Scripts -->
+  <!-- Load the necessary scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.6.1/dist/socket.io.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.4.7/dist/peerjs.min.js"></script>
   <script src="main.js"></script>
 </body>
 </html>
