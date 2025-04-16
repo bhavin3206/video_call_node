@@ -51,6 +51,16 @@ document.addEventListener('DOMContentLoaded', () => {
   let isMicEnabled = true;
   let isCameraEnabled = true;
 
+  navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+  .then((stream) => {
+    // Close the stream immediately – just to trigger permission popup
+    stream.getTracks().forEach(track => track.stop());
+  })
+  .catch((err) => {
+    console.warn('Permissions not granted yet:', err);
+  });
+
+
   // Check if user is already logged in
   checkExistingSession();
 
@@ -438,6 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
     socket.on('call-ended', () => {
       endCurrentCall();
       showNotification('Call Ended', 'The other user ended the call');
+      socket.emit('join', myUsername); // Re-announce presence after call ends
     });
 
     socket.on('call-join-failed', ({ message }) => {
