@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize app with username
   async function initializeApp(username) {
     try {
-      document.getElementsByTagName('h1').classList.remove('w-100');
+      document.querySelector('h1')?.classList.remove('w-100');
       userControls.classList.add('d-flex');
       // Set username display
       usernameDisplay.textContent = username;
@@ -394,7 +394,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     socket.on('disconnect', () => {
       console.log('Disconnected from server');
-      showNotification('Disconnected', 'You have been disconnected from the server');
+      window.location.reload()
+      // showNotification('Disconnected', 'You have been disconnected from the server');
     });
 
     // Active users list update
