@@ -62,9 +62,6 @@
     /* Desktop layout for videos */
     @media (min-width: 768px) {
       #videoArea {
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: center;
         gap: 20px;
       }
       
@@ -215,7 +212,7 @@
         </div>
 
         <!-- Video Streams -->
-        <div id="videoArea">
+        <div id="videoArea" class="d-flex flex-row flex-wrap">
           <!-- Remote Video (Placed first to be on top in mobile view) -->
           <div class="video-container hidden" id="remoteVideoContainer">
             <video id="remoteVideo" autoplay playsinline></video>
