@@ -419,7 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
         incomingCallModal.hide();
         const onCallElems = document.getElementsByClassName('oncall');
         for (let elem of onCallElems) {
-          elem.classList.remove('hidden');
+          elem.classList.add('hidden');
         }    
       };
       
