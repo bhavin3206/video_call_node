@@ -72,6 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (username) {
       // Save username to localStorage
       localStorage.setItem('videoChatUsername', username);
+      document.getElementsByTagName('h1').classList.remove('w-100');
       initializeApp(username);
     }
   });
@@ -112,7 +113,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Show login screen again
     appScreen.classList.add('hidden');
     loginScreen.classList.remove('hidden');
-    document.getElementsByTagName('h1').classList.remove('w-100');
 
     window.location.reload()
   });
