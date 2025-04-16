@@ -585,7 +585,7 @@ document.addEventListener('DOMContentLoaded', () => {
     remoteSocketId = null;
     remotePeerId = null;
     currentRoomId = null;
-    window.location.reload()
+    // window.location.reload()
   }
 
   // Update the users list
