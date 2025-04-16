@@ -36,6 +36,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let remoteSocketId;
   let remotePeerId;
   let isCameraFlipped = true; // Default to mirrored (flipped) for selfie view
+  let isRemoteCameraFlipped = false; // Default to normal view for remote camera
+  let availableCameras = []; // Store available camera devices
+  let currentCameraIndex = 0; // Track which camera is in use
 
   // Initialize the application
   joinForm.addEventListener('submit', (e) => {
@@ -49,18 +52,22 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize app with username
   async function initializeApp(username) {
     try {
-      // Get user media
+      // Enumerate available cameras before requesting access
+      await enumerateCameras();
+
+      // Get user media with first camera (usually front camera on mobile)
       localStream = await navigator.mediaDevices.getUserMedia({
-        video: true,
+        video: { deviceId: availableCameras.length > 0 ? { exact: availableCameras[0].deviceId } : undefined },
         audio: true
       });
+      
       localVideo.srcObject = localStream;
       
       // Apply initial camera flip setting
       updateCameraFlip();
 
-      // Add camera flip toggle button
-      createCameraFlipButton();
+      // Add camera control buttons
+      createCameraControlButtons();
 
       // Connect to Socket.IO server
       socket = io();
@@ -83,23 +90,114 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Create camera flip toggle button
-  function createCameraFlipButton() {
-    const flipBtn = document.createElement('button');
-    flipBtn.innerHTML = '<i class="bi bi-camera"></i> Flip Camera';
-    flipBtn.className = 'btn btn-sm btn-secondary position-absolute top-0 right-0 m-2';
-    flipBtn.style.zIndex = '10';
-    flipBtn.style.right = '0';
+  // Enumerate available cameras
+  async function enumerateCameras() {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      availableCameras = devices.filter(device => device.kind === 'videoinput');
+      console.log('Available cameras:', availableCameras);
+    } catch (error) {
+      console.error('Error enumerating devices:', error);
+      availableCameras = [];
+    }
+  }
+
+  // Switch between available cameras
+  async function switchCamera() {
+    if (availableCameras.length <= 1) {
+      showNotification('Camera Switch', 'No additional cameras available');
+      return;
+    }
+
+    try {
+      // Stop all tracks on current stream
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+      }
+
+      // Move to next camera in the list
+      currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
+      const newCameraId = availableCameras[currentCameraIndex].deviceId;
+      
+      // Get stream from new camera
+      localStream = await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: { exact: newCameraId } },
+        audio: true
+      });
+      
+      // Update local video
+      localVideo.srcObject = localStream;
+      
+      // If in a call, replace the track for the remote peer
+      if (currentCall && currentCall.peerConnection) {
+        const videoTrack = localStream.getVideoTracks()[0];
+        const senders = currentCall.peerConnection.getSenders();
+        const videoSender = senders.find(sender => sender.track && sender.track.kind === 'video');
+        
+        if (videoSender && videoTrack) {
+          videoSender.replaceTrack(videoTrack);
+        }
+      }
+
+      // Update camera flip - typically back cameras shouldn't be mirrored
+      if (availableCameras.length > 1) {
+        // Assume front camera is first in list, back camera second
+        // This is a common convention but not guaranteed
+        isCameraFlipped = currentCameraIndex === 0;
+        updateCameraFlip();
+      }
+    } catch (error) {
+      console.error('Error switching camera:', error);
+      showNotification('Camera Switch Failed', error.message);
+    }
+  }
+
+  // Create camera control buttons
+  function createCameraControlButtons() {
+    const localVideoContainer = localVideo.parentElement;
+    localVideoContainer.style.position = 'relative';
     
+    // Control panel div for local video
+    const localControlPanel = document.createElement('div');
+    localControlPanel.className = 'position-absolute top-0 right-0 p-2 d-flex gap-2';
+    localControlPanel.style.zIndex = '10';
+    
+    // Camera flip button
+    const flipBtn = document.createElement('button');
+    flipBtn.innerHTML = '<i class="bi bi-camera"></i> Flip View';
+    flipBtn.className = 'btn btn-sm btn-secondary';
     flipBtn.addEventListener('click', () => {
       isCameraFlipped = !isCameraFlipped;
       updateCameraFlip();
     });
     
-    // Add button to the local video container
-    const localVideoContainer = localVideo.parentElement;
-    localVideoContainer.style.position = 'relative';
-    localVideoContainer.appendChild(flipBtn);
+    // Camera switch button (only if multiple cameras available)
+    const switchBtn = document.createElement('button');
+    switchBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Switch Camera';
+    switchBtn.className = 'btn btn-sm btn-primary';
+    switchBtn.addEventListener('click', switchCamera);
+    
+    // Add buttons to control panel
+    localControlPanel.appendChild(flipBtn);
+    localControlPanel.appendChild(switchBtn);
+    
+    // Add control panel to container
+    localVideoContainer.appendChild(localControlPanel);
+
+    // Remote video flip button
+    const remoteFlipBtn = document.createElement('button');
+    remoteFlipBtn.innerHTML = '<i class="bi bi-camera"></i> Flip Their View';
+    remoteFlipBtn.className = 'btn btn-sm btn-secondary position-absolute top-0 right-0 m-2';
+    remoteFlipBtn.style.zIndex = '10';
+    
+    remoteFlipBtn.addEventListener('click', () => {
+      isRemoteCameraFlipped = !isRemoteCameraFlipped;
+      updateRemoteCameraFlip();
+    });
+    
+    // Add button to the remote video container
+    remoteVideoContainer.style.position = 'relative';
+    remoteVideoContainer.appendChild(remoteFlipBtn);
   }
 
   // Update camera flip based on current setting
@@ -108,6 +206,15 @@ document.addEventListener('DOMContentLoaded', () => {
       localVideo.style.transform = 'scaleX(-1)'; // Mirror the video
     } else {
       localVideo.style.transform = 'scaleX(1)'; // Normal video
+    }
+  }
+
+  // Update remote camera flip based on current setting
+  function updateRemoteCameraFlip() {
+    if (isRemoteCameraFlipped) {
+      remoteVideo.style.transform = 'scaleX(-1)'; // Mirror the video
+    } else {
+      remoteVideo.style.transform = 'scaleX(1)'; // Normal video
     }
   }
 
@@ -208,6 +315,9 @@ document.addEventListener('DOMContentLoaded', () => {
         remoteVideoContainer.classList.remove('hidden');
         callControls.classList.remove('hidden');
         
+        // Apply initial remote camera flip setting
+        updateRemoteCameraFlip();
+        
         if (remoteSocketId) {
           callStatus.textContent = `In call with ${remoteVideoLabel.textContent}`;
         }
@@ -242,6 +352,10 @@ document.addEventListener('DOMContentLoaded', () => {
         remoteVideo.srcObject = stream;
         remoteVideoContainer.classList.remove('hidden');
         callControls.classList.remove('hidden');
+        
+        // Apply initial remote camera flip setting
+        updateRemoteCameraFlip();
+        
         callStatus.textContent = `In call with ${remoteVideoLabel.textContent}`;
       });
       
@@ -360,5 +474,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (peer) {
       peer.destroy();
     }
+  });
+
+  // Listen for device changes (e.g., new camera connected)
+  navigator.mediaDevices.addEventListener('devicechange', async () => {
+    console.log('Device change detected');
+    await enumerateCameras();
   });
 });
