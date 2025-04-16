@@ -518,6 +518,7 @@ document.addEventListener('DOMContentLoaded', () => {
       for (let elem of onCallElems) {
         elem.classList.add('hidden');
       }
+      callControls.classList.add('d-flex');
       currentCall = peer.call(remotePeerId, localStream);
     }
     
@@ -559,7 +560,7 @@ document.addEventListener('DOMContentLoaded', () => {
     for (let elem of onCallElems) {
       elem.classList.remove('hidden');
     }
-
+    callControls.classList.remove('d-flex');
     resetCallState();
   }
 
@@ -585,7 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
     remoteSocketId = null;
     remotePeerId = null;
     currentRoomId = null;
-    // window.location.reload()
+    window.location.reload()
   }
 
   // Update the users list
