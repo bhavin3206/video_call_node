@@ -23,7 +23,6 @@
       display: flex;
       flex-direction: column;
       max-height: calc(100vh - 240px);
-      overflow: hidden;
     }
     
     /* Mobile layout for videos */
@@ -67,7 +66,6 @@
       
       .video-container {
         width: 100%;
-        max-width: 500px;
       }
     }
     
@@ -99,17 +97,8 @@
       z-index: 5;
     }
     
-    #callControls {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      padding: 15px;
-      background-color: transparent;
-      display: flex;
-      justify-content: center;
+    #callControls {    
       gap: 20px;
-      z-index: 100;
     }
     
     .control-btn {
@@ -202,9 +191,9 @@
       </div>
 
       <!-- Video Area -->
-      <div class="col-md-9 h-100 w-100 d-flex justify-content-center align-items-center flex-column">
+      <div class="col-md-9 h-100 d-flex align-items-center flex-column">
         <!-- Call Status Area -->
-        <div id="callStatus" class="alert alert-info text-center mb-3 oncall">
+        <div id="callStatus" class="alert alert-info text-center mb-3 oncall w-100">
           Not in a call
         </div>
 
@@ -224,7 +213,7 @@
         </div>
 
         <!-- Call Controls (always visible, but not functional until in a call) -->
-        <div id="callControls" class="mb-5 mb-sm-0 pb-2 hidden ">
+        <div id="callControls" class="mb-5 mb-sm-0 pb-2 d-flex justify-content-center bg-transparent position-fixed start-0 end-0 bottom-0 p-4 z-3">
           <button id="toggleMicBtn" class="btn btn-primary control-btn">
             <i class="bi bi-mic-fill"></i>
           </button>
