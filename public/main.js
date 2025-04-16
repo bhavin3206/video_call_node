@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentRoomId;
   let remoteSocketId;
   let remotePeerId;
+  let isCameraFlipped = true; // Default to mirrored (flipped) for selfie view
 
   // Initialize the application
   joinForm.addEventListener('submit', (e) => {
@@ -54,6 +55,12 @@ document.addEventListener('DOMContentLoaded', () => {
         audio: true
       });
       localVideo.srcObject = localStream;
+      
+      // Apply initial camera flip setting
+      updateCameraFlip();
+
+      // Add camera flip toggle button
+      createCameraFlipButton();
 
       // Connect to Socket.IO server
       socket = io();
@@ -73,6 +80,34 @@ document.addEventListener('DOMContentLoaded', () => {
       socket.emit('join', username);
     } catch (error) {
       showNotification('Error', `Could not access camera and microphone: ${error.message}`);
+    }
+  }
+
+  // Create camera flip toggle button
+  function createCameraFlipButton() {
+    const flipBtn = document.createElement('button');
+    flipBtn.innerHTML = '<i class="bi bi-camera"></i> Flip Camera';
+    flipBtn.className = 'btn btn-sm btn-secondary position-absolute top-0 right-0 m-2';
+    flipBtn.style.zIndex = '10';
+    flipBtn.style.right = '0';
+    
+    flipBtn.addEventListener('click', () => {
+      isCameraFlipped = !isCameraFlipped;
+      updateCameraFlip();
+    });
+    
+    // Add button to the local video container
+    const localVideoContainer = localVideo.parentElement;
+    localVideoContainer.style.position = 'relative';
+    localVideoContainer.appendChild(flipBtn);
+  }
+
+  // Update camera flip based on current setting
+  function updateCameraFlip() {
+    if (isCameraFlipped) {
+      localVideo.style.transform = 'scaleX(-1)'; // Mirror the video
+    } else {
+      localVideo.style.transform = 'scaleX(1)'; // Normal video
     }
   }
 
