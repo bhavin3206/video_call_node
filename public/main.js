@@ -449,11 +449,26 @@ document.addEventListener('DOMContentLoaded', () => {
       resetCallState();
     });
 
+    // socket.on('call-ended', () => {
+    //   endCurrentCall();
+    //   showNotification('Call Ended', 'The other user ended the call');
+    //   socket.emit('join', myUsername); // Re-announce presence after call ends
+    // });
     socket.on('call-ended', () => {
-      endCurrentCall();
+      console.log('[SOCKET] Call ended received from server');
+      if (currentCall) {
+        currentCall.close(); // just in case
+      }
+    
+      resetCallState(); // ✅ stops video, hides UI
       showNotification('Call Ended', 'The other user ended the call');
-      socket.emit('join', myUsername); // Re-announce presence after call ends
+      
+      // Optional: force local stream cleanup
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+      }
     });
+    
 
     socket.on('call-join-failed', ({ message }) => {
       showNotification('Join Failed', message);
